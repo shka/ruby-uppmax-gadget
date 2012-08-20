@@ -1,0 +1,39 @@
+module Uppmax
+  class Gadget < Thor
+
+    namespace :uppmax
+
+    class_option :account, :type => :string, :aliases => '-A', :desc => 'charge job to this account'
+    class_option :time, :type => :string, :aliases => '-t', :default => '12:00:00', :desc => 'time limit'
+    class_option :partition, :type => :string, :aliases => '-p', :default => 'core', :desc => 'partition requested'
+    class_option :ntasks, :type => :numeric, :aliases => '-n', :default => 1, :desc => 'number of tasks to run'
+
+    desc 'sbatches COMMAND FILES', 'sbatch repeatedly for each file'
+    def sbatches(command, *files)
+      files.each { |file|
+        ret = `sbatch -A #{get_account} -t #{options[:time]} -p #{options[:partition]} -n #{options[:ntasks]} -J sbatches.UppmaxGadget --wrap='#{command} #{file}'`
+        puts ret
+      }
+    end
+
+    desc 'gzip FILES', 'submit multiple gzip jobs for each file'
+    def gzip(*files)
+      sbatches('gzip', *files)
+    end
+
+    private
+
+    def get_account
+      if @account.nil?
+        if options[:account].nil?
+          @account = `projinfo -q | cut -f 1 -d ' '`.rstrip.split(/\r?\n/)[0]
+        else
+          @account = options[:account]
+        end
+      end
+      @account
+    end
+
+  end
+
+end
